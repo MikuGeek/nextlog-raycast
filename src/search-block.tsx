@@ -1,6 +1,7 @@
 import { ActionPanel, List, Action, showToast, Toast, getPreferenceValues, open } from "@raycast/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import fetch from "node-fetch";
+import Fuse from 'fuse.js';
 
 interface Block {
   uuid: string;
@@ -23,10 +24,21 @@ export default function Command() {
   const preferences = getPreferenceValues<Preferences>();
 
   useEffect(() => {
-    searchBlocks(searchText);
-  }, [searchText]);
+    fetchBlocks();
+  }, []);
 
-  async function searchBlocks(query: string) {
+  const fuse = useMemo(() => new Fuse(blocks, {
+    keys: ['content', 'page.name'],
+    threshold: 0.4,
+    includeMatches: true,
+  }), [blocks]);
+
+  const filteredBlocks = useMemo(() => {
+    if (!searchText) return blocks;
+    return fuse.search(searchText).map(result => result.item);
+  }, [searchText, blocks, fuse]);
+
+  async function fetchBlocks() {
     setIsLoading(true);
     try {
       const response = await fetch(preferences.logseqApiUrl, {
@@ -42,7 +54,6 @@ export default function Command() {
             [:find (pull ?b [:block/uuid :block/content {:block/page [:db/id :block/name]}])
              :where
              [?b :block/content ?content]
-             [(clojure.string/includes? ?content "${query}")]
              [?b :block/page ?p]]
           `,
           ],
@@ -55,7 +66,7 @@ export default function Command() {
 
       const data = await response.json();
       if (Array.isArray(data)) {
-        const fetchedBlocks = data.slice(0, 20).map((item: [Block]) => item[0]);
+        const fetchedBlocks = data.map((item: [Block]) => item[0]);
         setBlocks(fetchedBlocks);
       }
     } catch (error) {
@@ -93,7 +104,7 @@ export default function Command() {
       searchBarPlaceholder="Search Logseq blocks..."
       throttle
     >
-      {blocks.map((block) => (
+      {filteredBlocks.map((block) => (
         <List.Item
           key={block.uuid}
           title={block.content}
