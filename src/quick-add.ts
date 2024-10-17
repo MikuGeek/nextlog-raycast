@@ -1,16 +1,6 @@
 import { showHUD, getPreferenceValues, LaunchProps } from "@raycast/api";
 import fetch from "node-fetch";
-
-
-interface QuickAddArguments {
-  type: string;
-  text: string;
-}
-
-interface Preferences {
-  logseqApiToken: string;
-  logseqApiUrl: string;
-}
+import { QuickAddArguments, Preferences } from "./util";
 
 export default async function main(props: LaunchProps<{ arguments: QuickAddArguments }>) {
   const { type, text } = props.arguments;

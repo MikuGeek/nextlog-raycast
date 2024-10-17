@@ -2,23 +2,7 @@ import { ActionPanel, List, Action, showToast, Toast, getPreferenceValues, open,
 import { useState, useEffect, useMemo } from "react";
 import fetch from "node-fetch";
 import Fuse from "fuse.js";
-
-interface Page {
-  id: string;
-  name: string;
-  content: string;
-}
-
-interface Preferences {
-  logseqApiUrl: string;
-  logseqApiToken: string;
-  logseqGraphName: string;
-}
-
-interface Block {
-  content?: string;
-  children?: Block[];
-}
+import { Page, Preferences, cleanContent, Block, fuseOptions } from "./util";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -31,16 +15,8 @@ export default function Command() {
   }, []);
 
   const fuse = useMemo(
-    () =>
-      new Fuse(pages, {
-        keys: ["name", "content"],
-        threshold: 0.2,
-        includeMatches: true,
-        minMatchCharLength: 2,
-        ignoreLocation: true,
-        findAllMatches: true,
-      }),
-    [pages],
+    () => new Fuse(pages, fuseOptions),
+    [pages]
   );
 
   const filteredPages = useMemo(() => {
@@ -121,8 +97,8 @@ export default function Command() {
 
       if (Array.isArray(result)) {
         return result.map(block => extractContent(block)).join("\n");
-      } else if (typeof result === 'object' && result !== null) {
-        return extractContent(result);
+      } else if (typeof result === "object" && result !== null) {
+        return extractContent(result as Block);
       } else {
         return "No content available";
       }
@@ -133,42 +109,11 @@ export default function Command() {
   }
 
   function extractContent(block: Block): string {
-    let content = block.content ? removeBlockIds(block.content) : '';
+    let content = block.content ? block.content.replace(/\s*id::\s*[a-f0-9-]+/g, "").trim() : "";
     if (Array.isArray(block.children)) {
-      content += '\n' + block.children.map((child: Block) => extractContent(child)).join('\n');
+      content += "\n" + block.children.map((child: Block) => extractContent(child)).join("\n");
     }
     return content;
-  }
-
-  function removeBlockIds(content: string): string {
-    // Remove "id:: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" patterns from the content
-    return content.replace(/\s*id::\s*[a-f0-9-]+/g, '').trim();
-  }
-
-  function cleanContent(content: string): string {
-    const lines = content.split('\n');
-    let formattedContent = '';
-    let currentLevel = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.length === 0) continue;
-
-      const indentLevel = lines[i].search(/\S|$/);
-      const levelDiff = indentLevel - currentLevel;
-
-      if (levelDiff > 0) {
-        currentLevel = indentLevel;
-        formattedContent += '  '.repeat(currentLevel) + '- ' + line + '\n';
-      } else if (levelDiff < 0) {
-        currentLevel = indentLevel;
-        formattedContent += '\n' + '  '.repeat(currentLevel) + '- ' + line + '\n';
-      } else {
-        formattedContent += '  '.repeat(currentLevel) + '- ' + line + '\n';
-      }
-    }
-
-    return formattedContent;
   }
 
   async function openInLogseq(page: Page) {

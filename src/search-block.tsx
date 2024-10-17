@@ -2,20 +2,7 @@ import { ActionPanel, List, Action, showToast, Toast, getPreferenceValues, open,
 import { useState, useEffect, useMemo } from "react";
 import fetch from "node-fetch";
 import Fuse from "fuse.js";
-
-interface Block {
-  uuid: string;
-  content: string;
-  page: {
-    name: string;
-  };
-}
-
-interface Preferences {
-  logseqApiUrl: string;
-  logseqApiToken: string;
-  logseqGraphName: string;
-}
+import { Preferences, extractUrl, Block } from "./util";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -88,21 +75,10 @@ export default function Command() {
     }
   }
 
-  function extractUrl(content: string): string | null {
-    // This regex matches URLs more accurately, including those in parentheses
-    const urlRegex = /(?:https?:\/\/|www\.)[^\s)]+(?:\([^\s)]*\)[^\s)]*)*[^\s).]*/gi;
-    const match = content.match(urlRegex);
-    if (match) {
-      // Clean up the URL by removing trailing punctuation
-      return match[0].replace(/[.,;:!?]$/, '');
-    }
-    return null;
-  }
-
   async function openInLogseq(block: Block) {
     try {
       const graphName = encodeURIComponent(preferences.logseqGraphName);
-      const pageName = encodeURIComponent(block.page.name);
+      const pageName = encodeURIComponent(block.page?.name || "");
       const blockId = encodeURIComponent(block.uuid);
       await open(`logseq://graph/${graphName}?page=${pageName}&block-id=${blockId}`);
     } catch (error) {
@@ -131,7 +107,7 @@ export default function Command() {
             <List.Item
               key={block.uuid}
               title={block.content}
-              subtitle={block.page.name}
+              subtitle={block.page?.name || ""}
               actions={
                 <ActionPanel>
                   <Action title="Open in Logseq" icon={Icon.ArrowRight} onAction={() => openInLogseq(block)} />
