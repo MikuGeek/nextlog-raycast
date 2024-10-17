@@ -1,7 +1,7 @@
-import { ActionPanel, List, Action, showToast, Toast, getPreferenceValues, open } from "@raycast/api";
+import { ActionPanel, List, Action, showToast, Toast, getPreferenceValues, open, Icon } from "@raycast/api";
 import { useState, useEffect, useMemo } from "react";
 import fetch from "node-fetch";
-import Fuse from 'fuse.js';
+import Fuse from "fuse.js";
 
 interface Block {
   uuid: string;
@@ -27,15 +27,22 @@ export default function Command() {
     fetchBlocks();
   }, []);
 
-  const fuse = useMemo(() => new Fuse(blocks, {
-    keys: ['content', 'page.name'],
-    threshold: 0.4,
-    includeMatches: true,
-  }), [blocks]);
+  const fuse = useMemo(
+    () =>
+      new Fuse(blocks, {
+        keys: ["content", "page.name"],
+        threshold: 0.2,
+        includeMatches: true,
+        minMatchCharLength: 3,
+        ignoreLocation: true,
+        findAllMatches: true,
+      }),
+    [blocks],
+  );
 
   const filteredBlocks = useMemo(() => {
-    if (!searchText) return blocks;
-    return fuse.search(searchText).map(result => result.item);
+    if (!searchText || searchText.length <= 1) return [];
+    return fuse.search(searchText).map((result) => result.item);
   }, [searchText, blocks, fuse]);
 
   async function fetchBlocks() {
@@ -101,26 +108,30 @@ export default function Command() {
     <List
       isLoading={isLoading}
       onSearchTextChange={setSearchText}
-      searchBarPlaceholder="Search Logseq blocks..."
+      searchBarPlaceholder="Search Logseq blocks... (type at least 2 characters)"
       throttle
     >
-      {filteredBlocks.map((block) => (
-        <List.Item
-          key={block.uuid}
-          title={block.content}
-          subtitle={block.page.name}
-          actions={
-            <ActionPanel>
-              <Action title="Open in Logseq" onAction={() => openInLogseq(block)} />
-              <Action.CopyToClipboard
-                title="Copy Block Content"
-                content={block.content}
-                shortcut={{ modifiers: ["cmd"], key: "c" }}
-              />
-            </ActionPanel>
-          }
-        />
-      ))}
+      {searchText.length <= 1 ? (
+        <List.EmptyView icon={Icon.MagnifyingGlass} title="Enter at least 2 characters to search" />
+      ) : (
+        filteredBlocks.map((block) => (
+          <List.Item
+            key={block.uuid}
+            title={block.content}
+            subtitle={block.page.name}
+            actions={
+              <ActionPanel>
+                <Action title="Open in Logseq" icon={Icon.ArrowRight} onAction={() => openInLogseq(block)} />
+                <Action.CopyToClipboard
+                  title="Copy Block Content"
+                  content={block.content}
+                  shortcut={{ modifiers: ["cmd"], key: "c" }}
+                />
+              </ActionPanel>
+            }
+          />
+        ))
+      )}
     </List>
   );
 }
