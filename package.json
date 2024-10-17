@@ -53,6 +53,12 @@
           ]
         }
       ]
+    },
+    {
+      "name": "search-page",
+      "title": "Search page",
+      "description": "Search pages in Logseq",
+      "mode": "view"
     }
   ],
   "preferences": [

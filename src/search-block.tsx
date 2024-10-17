@@ -33,7 +33,7 @@ export default function Command() {
         keys: ["content", "page.name"],
         threshold: 0.2,
         includeMatches: true,
-        minMatchCharLength: 3,
+        minMatchCharLength: 2,
         ignoreLocation: true,
         findAllMatches: true,
       }),
