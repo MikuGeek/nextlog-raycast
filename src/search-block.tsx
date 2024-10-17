@@ -88,6 +88,17 @@ export default function Command() {
     }
   }
 
+  function extractUrl(content: string): string | null {
+    // This regex matches URLs more accurately, including those in parentheses
+    const urlRegex = /(?:https?:\/\/|www\.)[^\s)]+(?:\([^\s)]*\)[^\s)]*)*[^\s).]*/gi;
+    const match = content.match(urlRegex);
+    if (match) {
+      // Clean up the URL by removing trailing punctuation
+      return match[0].replace(/[.,;:!?]$/, '');
+    }
+    return null;
+  }
+
   async function openInLogseq(block: Block) {
     try {
       const graphName = encodeURIComponent(preferences.logseqGraphName);
@@ -114,23 +125,33 @@ export default function Command() {
       {searchText.length <= 1 ? (
         <List.EmptyView icon={Icon.MagnifyingGlass} title="Enter at least 2 characters to search" />
       ) : (
-        filteredBlocks.map((block) => (
-          <List.Item
-            key={block.uuid}
-            title={block.content}
-            subtitle={block.page.name}
-            actions={
-              <ActionPanel>
-                <Action title="Open in Logseq" icon={Icon.ArrowRight} onAction={() => openInLogseq(block)} />
-                <Action.CopyToClipboard
-                  title="Copy Block Content"
-                  content={block.content}
-                  shortcut={{ modifiers: ["cmd"], key: "c" }}
-                />
-              </ActionPanel>
-            }
-          />
-        ))
+        filteredBlocks.map((block) => {
+          const url = extractUrl(block.content);
+          return (
+            <List.Item
+              key={block.uuid}
+              title={block.content}
+              subtitle={block.page.name}
+              actions={
+                <ActionPanel>
+                  <Action title="Open in Logseq" icon={Icon.ArrowRight} onAction={() => openInLogseq(block)} />
+                  <Action.CopyToClipboard
+                    title="Copy Block Content"
+                    content={block.content}
+                    shortcut={{ modifiers: ["cmd"], key: "c" }}
+                  />
+                  {url && (
+                    <Action.OpenInBrowser
+                      title="Open URL in Browser"
+                      url={url}
+                      shortcut={{ modifiers: ["cmd"], key: "o" }}
+                    />
+                  )}
+                </ActionPanel>
+              }
+            />
+          );
+        })
       )}
     </List>
   );
