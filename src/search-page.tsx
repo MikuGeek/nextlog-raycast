@@ -14,10 +14,7 @@ export default function Command() {
     fetchPages();
   }, []);
 
-  const fuse = useMemo(
-    () => new Fuse(pages, fuseOptions),
-    [pages]
-  );
+  const fuse = useMemo(() => new Fuse(pages, fuseOptions), [pages]);
 
   const filteredPages = useMemo(() => {
     if (!searchText || searchText.length <= 1) return [];
@@ -60,7 +57,7 @@ export default function Command() {
               name: page.name,
               content: content,
             };
-          })
+          }),
         );
         setPages(fetchedPages);
       }
@@ -96,7 +93,7 @@ export default function Command() {
       const result = await response.json();
 
       if (Array.isArray(result)) {
-        return result.map(block => extractContent(block)).join("\n");
+        return result.map((block) => extractContent(block)).join("\n");
       } else if (typeof result === "object" && result !== null) {
         return extractContent(result as Block);
       } else {
@@ -161,11 +158,7 @@ export default function Command() {
                 />
               </ActionPanel>
             }
-            detail={
-              <List.Item.Detail
-                markdown={cleanContent(page.content)}
-              />
-            }
+            detail={<List.Item.Detail markdown={cleanContent(page.content)} />}
           />
         ))
       )}

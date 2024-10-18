@@ -2,7 +2,7 @@ import { ActionPanel, List, Action, showToast, Toast, getPreferenceValues, open,
 import { useState, useEffect, useMemo } from "react";
 import fetch from "node-fetch";
 import Fuse from "fuse.js";
-import { Preferences, extractUrl, Block } from "./util";
+import { Preferences, extractUrl, Block, fuseOptions } from "./util";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -14,18 +14,7 @@ export default function Command() {
     fetchBlocks();
   }, []);
 
-  const fuse = useMemo(
-    () =>
-      new Fuse(blocks, {
-        keys: ["content", "page.name"],
-        threshold: 0.2,
-        includeMatches: true,
-        minMatchCharLength: 2,
-        ignoreLocation: true,
-        findAllMatches: true,
-      }),
-    [blocks],
-  );
+  const fuse = useMemo(() => new Fuse(blocks, fuseOptions), [blocks]);
 
   const filteredBlocks = useMemo(() => {
     if (!searchText || searchText.length <= 1) return [];
